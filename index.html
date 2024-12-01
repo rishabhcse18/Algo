@@ -4,350 +4,270 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Algorithm Visualizer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide-react@0.263.0/dist/umd/lucide-react.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .algorithm-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .visualization {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #ddd;
+            margin-top: 15px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        h2 {
+            color: #444;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        button {
+            margin: 0 10px;
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
-    <div id="root"></div>
+    <h1>Algorithm Visualizer</h1>
 
-    <script type="text/babel">
-        // Lucide icons
-        const { ArrowDownUp, Shuffle, RefreshCcw } = lucide;
+    <!-- Sorting Algorithms Section -->
+    <div class="algorithm-container">
+        <h2>Sorting Algorithms</h2>
+        
+        <!-- Bubble Sort Visualization -->
+        <div id="bubble-sort">
+            <h3>Bubble Sort</h3>
+            <div class="controls">
+                <button onclick="generateBubbleSortArray()">Generate Array</button>
+                <button onclick="startBubbleSort()">Sort</button>
+            </div>
+            <svg id="bubble-sort-visualization" class="visualization"></svg>
+        </div>
 
-        // Sorting Algorithms
-        const bubbleSort = (arr) => {
-            const array = [...arr];
-            const steps = [];
-            const n = array.length;
+        <!-- Merge Sort Visualization -->
+        <div id="merge-sort">
+            <h3>Merge Sort</h3>
+            <div class="controls">
+                <button onclick="generateMergeSortArray()">Generate Array</button>
+                <button onclick="startMergeSort()">Sort</button>
+            </div>
+            <svg id="merge-sort-visualization" class="visualization"></svg>
+        </div>
+    </div>
 
-            for (let i = 0; i < n - 1; i++) {
-                for (let j = 0; j < n - i - 1; j++) {
-                    steps.push({ array: [...array], compareIndices: [j, j + 1] });
+    <!-- Search Algorithms Section -->
+    <div class="algorithm-container">
+        <h2>Search Algorithms</h2>
+        
+        <!-- Binary Search Visualization -->
+        <div id="binary-search">
+            <h3>Binary Search</h3>
+            <div class="controls">
+                <input type="number" id="target-number" placeholder="Target Number">
+                <button onclick="generateBinarySearchArray()">Generate Array</button>
+                <button onclick="startBinarySearch()">Search</button>
+            </div>
+            <svg id="binary-search-visualization" class="visualization"></svg>
+        </div>
+    </div>
+
+    <script>
+        // Utility Functions
+        function generateRandomArray(length = 20, min = 10, max = 100) {
+            return Array.from({length}, () => Math.floor(Math.random() * (max - min + 1)) + min);
+        }
+
+        function drawArray(svgId, array, highlightIndices = []) {
+            const svg = d3.select(`#${svgId}`);
+            svg.selectAll("*").remove();
+
+            const margin = {top: 20, right: 20, bottom: 30, left: 40};
+            const width = +svg.attr("width") || svg.node().getBoundingClientRect().width;
+            const height = +svg.attr("height") || 300;
+
+            const x = d3.scaleBand()
+                .domain(array.map((d, i) => i))
+                .range([margin.left, width - margin.right])
+                .padding(0.1);
+
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(array)])
+                .range([height - margin.bottom, margin.top]);
+
+            svg.selectAll(".bar")
+                .data(array)
+                .enter().append("rect")
+                .attr("class", "bar")
+                .attr("x", (d, i) => x(i))
+                .attr("y", d => y(d))
+                .attr("width", x.bandwidth())
+                .attr("height", d => height - margin.bottom - y(d))
+                .attr("fill", (d, i) => highlightIndices.includes(i) ? "red" : "steelblue");
+
+            svg.selectAll(".bar-label")
+                .data(array)
+                .enter().append("text")
+                .attr("class", "bar-label")
+                .attr("x", (d, i) => x(i) + x.bandwidth() / 2)
+                .attr("y", d => y(d) - 5)
+                .attr("text-anchor", "middle")
+                .text(d => d);
+        }
+
+        // Bubble Sort Visualization
+        let bubbleSortArray = [];
+        function generateBubbleSortArray() {
+            bubbleSortArray = generateRandomArray();
+            drawArray('bubble-sort-visualization', bubbleSortArray);
+        }
+
+        async function startBubbleSort() {
+            for (let i = 0; i < bubbleSortArray.length; i++) {
+                for (let j = 0; j < bubbleSortArray.length - i - 1; j++) {
+                    drawArray('bubble-sort-visualization', bubbleSortArray, [j, j+1]);
+                    await new Promise(resolve => setTimeout(resolve, 100));
                     
-                    if (array[j] > array[j + 1]) {
+                    if (bubbleSortArray[j] > bubbleSortArray[j+1]) {
                         // Swap elements
-                        [array[j], array[j + 1]] = [array[j + 1], array[j]];
-                        steps.push({ array: [...array], swapIndices: [j, j + 1] });
+                        [bubbleSortArray[j], bubbleSortArray[j+1]] = [bubbleSortArray[j+1], bubbleSortArray[j]];
+                        drawArray('bubble-sort-visualization', bubbleSortArray, [j, j+1]);
+                        await new Promise(resolve => setTimeout(resolve, 100));
                     }
                 }
             }
-            
-            steps.push({ array, isFinal: true });
-            return steps;
-        };
+            drawArray('bubble-sort-visualization', bubbleSortArray);
+        }
 
-        const quickSort = (arr) => {
-            const steps = [];
-            
-            const partition = (array, low, high) => {
-                const pivot = array[high];
-                let i = low - 1;
-                
-                for (let j = low; j < high; j++) {
-                    steps.push({ 
-                        array: [...array], 
-                        compareIndices: [j, high], 
-                        pivotIndex: high 
-                    });
-                    
-                    if (array[j] < pivot) {
-                        i++;
-                        [array[i], array[j]] = [array[j], array[i]];
-                        steps.push({ 
-                            array: [...array], 
-                            swapIndices: [i, j] 
-                        });
-                    }
-                }
-                
-                [array[i + 1], array[high]] = [array[high], array[i + 1]];
-                steps.push({ 
-                    array: [...array], 
-                    swapIndices: [i + 1, high] 
-                });
-                
-                return i + 1;
-            };
-            
-            const quickSortRecursive = (array, low, high) => {
-                if (low < high) {
-                    const pivotIndex = partition(array, low, high);
-                    quickSortRecursive(array, low, pivotIndex - 1);
-                    quickSortRecursive(array, pivotIndex + 1, high);
-                }
-            };
-            
-            const array = [...arr];
-            quickSortRecursive(array, 0, array.length - 1);
-            steps.push({ array, isFinal: true });
-            
-            return steps;
-        };
+        // Merge Sort Visualization
+        let mergeSortArray = [];
+        function generateMergeSortArray() {
+            mergeSortArray = generateRandomArray();
+            drawArray('merge-sort-visualization', mergeSortArray);
+        }
 
-        // Binary Search Algorithm
-        const binarySearch = (arr, target) => {
-            const steps = [];
+        async function mergeSort(arr, start = 0, end = arr.length - 1) {
+            if (start >= end) return;
+
+            const mid = Math.floor((start + end) / 2);
+            
+            await mergeSort(arr, start, mid);
+            await mergeSort(arr, mid + 1, end);
+            
+            await merge(arr, start, mid, end);
+        }
+
+        async function merge(arr, start, mid, end) {
+            const left = arr.slice(start, mid + 1);
+            const right = arr.slice(mid + 1, end + 1);
+            
+            let i = 0, j = 0, k = start;
+            
+            while (i < left.length && j < right.length) {
+                drawArray('merge-sort-visualization', arr, [k, start + i, mid + 1 + j]);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                if (left[i] <= right[j]) {
+                    arr[k] = left[i];
+                    i++;
+                } else {
+                    arr[k] = right[j];
+                    j++;
+                }
+                k++;
+            }
+            
+            while (i < left.length) {
+                arr[k] = left[i];
+                i++;
+                k++;
+            }
+            
+            while (j < right.length) {
+                arr[k] = right[j];
+                j++;
+                k++;
+            }
+            
+            drawArray('merge-sort-visualization', arr);
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        async function startMergeSort() {
+            await mergeSort(mergeSortArray);
+            drawArray('merge-sort-visualization', mergeSortArray);
+        }
+
+        // Binary Search Visualization
+        let binarySearchArray = [];
+        function generateBinarySearchArray() {
+            binarySearchArray = generateRandomArray(20).sort((a, b) => a - b);
+            drawArray('binary-search-visualization', binarySearchArray);
+        }
+
+        async function startBinarySearch() {
+            const target = +document.getElementById('target-number').value;
+            if (isNaN(target)) {
+                alert('Please enter a valid number');
+                return;
+            }
+
             let left = 0;
-            let right = arr.length - 1;
+            let right = binarySearchArray.length - 1;
 
             while (left <= right) {
                 const mid = Math.floor((left + right) / 2);
-                steps.push({ 
-                    array: arr, 
-                    left, 
-                    right, 
-                    mid, 
-                    target 
-                });
+                
+                // Highlight current search range
+                drawArray('binary-search-visualization', binarySearchArray, [left, right, mid]);
+                await new Promise(resolve => setTimeout(resolve, 500));
 
-                if (arr[mid] === target) {
-                    steps.push({ 
-                        array: arr, 
-                        found: true, 
-                        index: mid 
-                    });
-                    return steps;
-                }
-
-                if (arr[mid] < target) {
+                if (binarySearchArray[mid] === target) {
+                    // Target found
+                    drawArray('binary-search-visualization', binarySearchArray, [mid]);
+                    alert(`Target ${target} found at index ${mid}`);
+                    return;
+                } else if (binarySearchArray[mid] < target) {
                     left = mid + 1;
                 } else {
                     right = mid - 1;
                 }
             }
 
-            steps.push({ 
-                array: arr, 
-                found: false 
-            });
-            return steps;
-        };
+            // Target not found
+            alert(`Target ${target} not found in the array`);
+        }
 
-        const AlgoVisualizer = () => {
-            const [arraySize, setArraySize] = React.useState(10);
-            const [array, setArray] = React.useState([]);
-            const [algorithm, setAlgorithm] = React.useState('bubbleSort');
-            const [searchTarget, setSearchTarget] = React.useState(null);
-            const [currentStep, setCurrentStep] = React.useState(0);
-            const [steps, setSteps] = React.useState([]);
-            const [isRunning, setIsRunning] = React.useState(false);
-            const [speed, setSpeed] = React.useState(500); // Milliseconds between steps
-
-            // Generate a new random array
-            const generateArray = React.useCallback(() => {
-                const newArray = Array.from(
-                    { length: arraySize }, 
-                    () => Math.floor(Math.random() * 100) + 1
-                );
-                setArray(newArray);
-                setCurrentStep(0);
-                setSteps([]);
-                setIsRunning(false);
-            }, [arraySize]);
-
-            // Run selected algorithm
-            const runAlgorithm = React.useCallback(() => {
-                setIsRunning(true);
-                let algorithmSteps = [];
-
-                // Ensure array is sorted for binary search
-                const sortedArray = algorithm === 'binarySearch' 
-                    ? [...array].sort((a, b) => a - b) 
-                    : [...array];
-
-                const target = algorithm === 'binarySearch' 
-                    ? sortedArray[Math.floor(Math.random() * sortedArray.length)]
-                    : null;
-
-                switch(algorithm) {
-                    case 'bubbleSort':
-                        algorithmSteps = bubbleSort(sortedArray);
-                        break;
-                    case 'quickSort':
-                        algorithmSteps = quickSort(sortedArray);
-                        break;
-                    case 'binarySearch':
-                        algorithmSteps = binarySearch(sortedArray, target);
-                        setSearchTarget(target);
-                        break;
-                    default:
-                        algorithmSteps = [];
-                }
-
-                setSteps(algorithmSteps);
-                setCurrentStep(0);
-            }, [algorithm, array]);
-
-            // Automatic step progression
-            React.useEffect(() => {
-                let intervalId;
-                if (isRunning && currentStep < steps.length - 1) {
-                    intervalId = setInterval(() => {
-                        setCurrentStep(prev => {
-                            if (prev < steps.length - 1) {
-                                return prev + 1;
-                            }
-                            setIsRunning(false);
-                            clearInterval(intervalId);
-                            return prev;
-                        });
-                    }, speed);
-                }
-
-                return () => {
-                    if (intervalId) clearInterval(intervalId);
-                };
-            }, [isRunning, currentStep, steps, speed]);
-
-            // Reset visualization
-            const resetVisualization = () => {
-                setCurrentStep(0);
-                setIsRunning(false);
-            };
-
-            // Initial array generation
-            React.useEffect(() => {
-                generateArray();
-            }, [generateArray]);
-
-            // Render bar for each array element
-            const renderBar = (value, index, currentStep) => {
-                const currentStepData = steps[currentStep] || {};
-                let barColor = 'bg-blue-500';
-                
-                if (currentStepData.compareIndices && 
-                    currentStepData.compareIndices.includes(index)) {
-                    barColor = 'bg-yellow-500';
-                }
-                
-                if (currentStepData.swapIndices && 
-                    currentStepData.swapIndices.includes(index)) {
-                    barColor = 'bg-red-500';
-                }
-                
-                if (algorithm === 'binarySearch') {
-                    const { left, right, mid } = currentStepData;
-                    if (index === left) barColor = 'bg-green-500';
-                    if (index === right) barColor = 'bg-green-500';
-                    if (index === mid) barColor = 'bg-yellow-500';
-                }
-
-                return (
-                    <div 
-                        key={index} 
-                        className={`w-8 ${barColor} mr-1`} 
-                        style={{ height: `${value * 3}px` }}
-                        title={`Value: ${value}`}
-                    />
-                );
-            };
-
-            return (
-                <div className="p-4 max-w-4xl mx-auto bg-gray-100 rounded-lg shadow-lg">
-                    <h1 className="text-2xl font-bold mb-4 text-center">
-                        Algorithm Visualization Tool
-                    </h1>
-
-                    {/* Algorithm Selection */}
-                    <div className="mb-4 flex justify-center space-x-4">
-                        <select 
-                            value={algorithm}
-                            onChange={(e) => {
-                                setAlgorithm(e.target.value);
-                                generateArray();
-                            }}
-                            className="p-2 border rounded"
-                        >
-                            <option value="bubbleSort">Bubble Sort</option>
-                            <option value="quickSort">Quick Sort</option>
-                            <option value="binarySearch">Binary Search</option>
-                        </select>
-
-                        <input 
-                            type="number" 
-                            min="5" 
-                            max="20" 
-                            value={arraySize}
-                            onChange={(e) => {
-                                const size = Math.max(5, Math.min(20, Number(e.target.value)));
-                                setArraySize(size);
-                            }}
-                            className="p-2 border rounded w-24"
-                            placeholder="Array Size"
-                        />
-
-                        <select 
-                            value={speed}
-                            onChange={(e) => setSpeed(Number(e.target.value))}
-                            className="p-2 border rounded"
-                        >
-                            <option value={1000}>Slow</option>
-                            <option value={500}>Medium</option>
-                            <option value={200}>Fast</option>
-                            <option value={50}>Fastest</option>
-                        </select>
-                    </div>
-
-                    {/* Visualization Area */}
-                    <div className="flex justify-center items-end h-64 mb-4">
-                        {steps[currentStep]?.array?.map((value, index) => 
-                            renderBar(value, index, currentStep)
-                        )}
-                    </div>
-
-                    {/* Algorithm Details */}
-                    <div className="text-center mb-4">
-                        {algorithm === 'binarySearch' && searchTarget !== null && (
-                            <p>Searching for: {searchTarget}</p>
-                        )}
-                        <p>Current Step: {currentStep} / {steps.length - 1}</p>
-                        {steps[currentStep]?.found !== undefined && (
-                            <p className={steps[currentStep].found 
-                                ? 'text-green-600' 
-                                : 'text-red-600'
-                            }>
-                                {steps[currentStep].found 
-                                    ? `Found at index ${steps[currentStep].index}!` 
-                                    : 'Target not found'}
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Control Buttons */}
-                    <div className="flex justify-center space-x-4">
-                        <button 
-                            onClick={generateArray} 
-                            className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-                            title="Regenerate Array"
-                        >
-                            <Shuffle size={24} />
-                        </button>
-                        <button 
-                            onClick={runAlgorithm}
-                            disabled={isRunning}
-                            className="bg-green-500 text-white p-2 rounded hover:bg-green-600 disabled:opacity-50"
-                            title="Start"
-                        >
-                            {isRunning ? 'Running...' : 'Start'}
-                        </button>
-                        <button 
-                            onClick={resetVisualization}
-                            className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
-                            title="Reset"
-                        >
-                            <RefreshCcw size={24} />
-                        </button>
-                    </div>
-                </div>
-            );
-        };
-
-        // Render the React component
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<AlgoVisualizer />);
+        // Initialize with some default visualizations
+        generateBubbleSortArray();
+        generateMergeSortArray();
+        generateBinarySearchArray();
     </script>
 </body>
 </html>
